@@ -1,0 +1,506 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="theme-color" content="#6a5cff">
+<title>花漾二维码 · 链接图片一键变美</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+  :root {
+    --brand: #6a5cff; --brand2: #a85cff;
+    --ink: #23263b; --sub: #7a7e99; --line: #ecebfa;
+    --card: #ffffff; --bg: #f5f4ff;
+  }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", "Microsoft YaHei", sans-serif;
+    background: linear-gradient(160deg, #eef0ff 0%, #f7ecff 45%, #eefaff 100%);
+    min-height: 100vh; color: var(--ink); padding-bottom: 48px;
+  }
+  .hero { text-align: center; padding: 28px 16px 8px; }
+  .hero h1 {
+    font-size: 26px; letter-spacing: 1px;
+    background: linear-gradient(90deg, var(--brand), var(--brand2), #3fb6ff);
+    -webkit-background-clip: text; background-clip: text; color: transparent;
+  }
+  .hero p { color: var(--sub); font-size: 13px; margin-top: 6px; }
+  .wrap { max-width: 460px; margin: 0 auto; padding: 12px 14px; }
+  .card {
+    background: var(--card); border-radius: 18px; padding: 18px 16px;
+    box-shadow: 0 8px 30px rgba(90, 80, 200, .10); margin-bottom: 14px;
+  }
+  .lbl { font-size: 13px; font-weight: 600; color: var(--ink); margin: 14px 0 7px; display: flex; align-items: center; }
+  .lbl:first-child { margin-top: 0; }
+  .lbl .tag { font-weight: 400; color: var(--sub); font-size: 12px; margin-left: 6px; }
+  input[type=text], input[type=url] {
+    width: 100%; border: 1.5px solid var(--line); border-radius: 12px;
+    padding: 11px 13px; font-size: 15px; outline: none; background: #fafaff;
+    transition: border .2s;
+  }
+  input[type=text]:focus, input[type=url]:focus { border-color: var(--brand); }
+  .seg { display: flex; background: #f0eefe; border-radius: 12px; padding: 4px; gap: 4px; }
+  .seg label {
+    flex: 1; text-align: center; padding: 9px 0; border-radius: 9px;
+    font-size: 14px; color: var(--sub); cursor: pointer; user-select: none;
+    transition: all .18s;
+  }
+  .seg input { display: none; }
+  .seg input:checked + label { background: #fff; color: var(--brand); font-weight: 700; box-shadow: 0 2px 8px rgba(106,92,255,.18); }
+  .seg2 label { font-size: 13px; padding: 8px 0; }
+  .drop {
+    border: 1.8px dashed #c9c4f5; border-radius: 14px; padding: 18px 12px;
+    text-align: center; color: var(--sub); font-size: 13px; cursor: pointer;
+    background: #fbfaff; transition: all .2s;
+  }
+  .drop:active { border-color: var(--brand); }
+  .drop b { color: var(--brand); }
+  #imgPreviewWrap { display: none; align-items: center; gap: 10px; margin-top: 10px; }
+  #imgThumb { width: 52px; height: 52px; border-radius: 10px; object-fit: cover; border: 1px solid var(--line); }
+  #imgMeta { font-size: 12px; color: var(--sub); flex: 1; line-height: 1.5; }
+  #imgClear { color: #ff4d6a; font-size: 13px; cursor: pointer; }
+  .swatches { display: flex; flex-wrap: wrap; gap: 9px; }
+  .sw {
+    width: 34px; height: 34px; border-radius: 50%; cursor: pointer; border: 2.5px solid transparent;
+    box-shadow: inset 0 0 0 2px #fff; transition: transform .15s, border .15s;
+  }
+  .sw.on { border-color: var(--ink); transform: scale(1.1); }
+  .auto-sw {
+    width: 34px; height: 34px; border-radius: 50%; cursor: pointer; font-size: 10px;
+    display: flex; align-items: center; justify-content: center; color: #fff; font-weight: 700;
+    background: linear-gradient(135deg, #c3b8ff, #ffd6f2, #b8ecff); color: #5551a8; border: 2.5px solid transparent;
+  }
+  .auto-sw.on { border-color: var(--ink); transform: scale(1.1); }
+  .customColors { display: flex; align-items: center; gap: 8px; margin-top: 10px; font-size: 12px; color: var(--sub); }
+  input[type=color] { width: 40px; height: 30px; border: none; background: none; cursor: pointer; }
+  #previewCard { text-align: center; }
+  #qrBox {
+    display: inline-block; padding: 14px; background: #fff; border-radius: 20px;
+    box-shadow: 0 10px 36px rgba(90, 80, 200, .16); position: relative;
+  }
+  #qr { width: min(72vw, 300px); height: auto; display: block; border-radius: 8px; }
+  #caption { margin-top: 12px; font-size: 13px; color: var(--sub); }
+  #caption b { color: var(--ink); }
+  #qrMsg { color: #ff4d6a; font-size: 12px; margin-top: 8px; min-height: 16px; }
+  .btns { display: flex; gap: 10px; margin-top: 14px; }
+  .btn {
+    flex: 1; border: none; border-radius: 13px; padding: 13px 0; font-size: 15px;
+    font-weight: 700; cursor: pointer; transition: transform .12s, opacity .2s;
+  }
+  .btn:active { transform: scale(.97); }
+  .btn.main { background: linear-gradient(90deg, var(--brand), var(--brand2)); color: #fff; }
+  .btn.ghost { background: #f0eefe; color: var(--brand); }
+  .btn:disabled { opacity: .45; }
+  .hist { display: flex; flex-direction: column; gap: 8px; }
+  .hitem {
+    display: flex; align-items: center; gap: 10px; padding: 10px 12px;
+    background: #fafaff; border: 1px solid var(--line); border-radius: 12px; cursor: pointer;
+  }
+  .hitem .hn { font-size: 14px; font-weight: 600; flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .hitem .hd { font-size: 11px; color: var(--sub); }
+  .hitem .hx { color: #b9b6d9; padding: 4px 6px; font-size: 15px; }
+  .empty { color: var(--sub); font-size: 13px; text-align: center; padding: 10px 0; }
+  .foot { text-align: center; color: #a5a3c4; font-size: 11.5px; line-height: 1.8; padding: 8px 20px 0; }
+  .foot a { color: var(--brand); }
+  /* 扫码看图页 */
+  #viewer { display: none; position: fixed; inset: 0; z-index: 99; background: rgba(18,16,34,.96); }
+  #viewer img { position: absolute; inset: 0; margin: auto; max-width: 96vw; max-height: 82vh; border-radius: 10px; }
+  #viewerTip { position: absolute; bottom: 5vh; width: 100%; text-align: center; color: #cfcbf1; font-size: 13px; }
+  #viewerName { position: absolute; top: 4vh; width: 100%; text-align: center; color: #fff; font-size: 16px; font-weight: 600; }
+  #toast {
+    position: fixed; left: 50%; bottom: 12vh; transform: translateX(-50%);
+    background: rgba(30,28,60,.92); color: #fff; font-size: 13px; padding: 10px 18px;
+    border-radius: 20px; opacity: 0; pointer-events: none; transition: opacity .25s; z-index: 100;
+  }
+</style>
+</head>
+<body>
+  <div class="hero">
+    <h1>花漾二维码</h1>
+    <p>放入链接或图片，起个好名字 · 自动配色自动造型</p>
+  </div>
+
+  <div class="wrap">
+    <!-- 预览 -->
+    <div class="card" id="previewCard">
+      <div id="qrBox"><canvas id="qr" width="760" height="760"></canvas></div>
+      <div id="caption"></div>
+      <div id="qrMsg"></div>
+      <div class="btns">
+        <button class="btn main" id="btnSave">⬇️ 保存 PNG</button>
+        <button class="btn ghost" id="btnCopy">📋 复制</button>
+      </div>
+    </div>
+
+    <!-- 内容 -->
+    <div class="card">
+      <div class="lbl">① 起个名字 <span class="tag">二维码的配色和图案会跟着名字的意思走</span></div>
+      <input type="text" id="inpName" placeholder="例如：周末露营召集帖、我的咖啡店…" maxlength="30">
+
+      <div class="lbl">② 内容类型</div>
+      <div class="seg" id="segType">
+        <input type="radio" name="t" id="tLink" checked><label for="tLink">🔗 链接</label>
+        <input type="radio" name="t" id="tImg"><label for="tImg">🖼️ 图片</label>
+      </div>
+
+      <div id="linkPane">
+        <div class="lbl">粘贴链接</div>
+        <input type="url" id="inpLink" placeholder="https://…">
+      </div>
+
+      <div id="imgPane" style="display:none">
+        <div class="lbl">上传图片 <span class="tag">图片会被压缩后内嵌进二维码，扫码即看</span></div>
+        <div class="drop" id="drop">点击选择图片，或把图片拖到这里<br><b>支持 JPG / PNG / WebP</b></div>
+        <input type="file" id="inpFile" accept="image/*" style="display:none">
+        <div id="imgPreviewWrap">
+          <img id="imgThumb" alt="">
+          <div id="imgMeta"></div>
+          <div id="imgClear">移除</div>
+        </div>
+        <div class="lbl">或直接粘贴图片直链 <span class="tag">有图床链接时优先用这个，扫码看原图</span></div>
+        <input type="url" id="inpImgUrl" placeholder="https://…/photo.jpg">
+      </div>
+    </div>
+
+    <!-- 样式 -->
+    <div class="card">
+      <div class="lbl">③ 风格</div>
+      <div class="seg seg2" id="segStyle"></div>
+
+      <div class="lbl">配色 <span class="tag">默认跟随名字，也可手选</span></div>
+      <div class="swatches" id="swatches"><div class="auto-sw on" id="swAuto">自动</div></div>
+      <div class="customColors">
+        自定义：
+        <input type="color" id="cc1" value="#6a5cff">
+        →
+        <input type="color" id="cc2" value="#a85cff">
+        <span id="ccHint"></span>
+      </div>
+
+      <div class="lbl">中心图案</div>
+      <div class="seg seg2" id="segLogo">
+        <input type="radio" name="lg" id="lgAuto" checked><label for="lgAuto">自动（跟名字）</label>
+        <input type="radio" name="lg" id="lgChar"><label for="lgChar">名字首字</label>
+        <input type="radio" name="lg" id="lgNone"><label for="lgNone">无</label>
+      </div>
+    </div>
+
+    <!-- 历史 -->
+    <div class="card">
+      <div class="lbl">最近生成</div>
+      <div class="hist" id="hist"><div class="empty">还没有记录，生成后会自动保存在本机</div></div>
+    </div>
+
+    <div class="foot">
+      图片内嵌模式：图片压缩后嵌入二维码，扫码打开本页面即可查看，无第三方图床、链接永久有效。<br>
+      二维码均高容错生成，可放心加Logo打印 · <a href="selftest.html">解码自测报告</a><br>
+      花漾二维码 · 本地生成，不上传任何数据
+    </div>
+  </div>
+
+  <!-- 扫码看图 -->
+  <div id="viewer">
+    <div id="viewerName"></div>
+    <img id="viewerImg" alt="">
+    <div id="viewerTip">长按图片可保存 / 转发</div>
+  </div>
+  <div id="toast"></div>
+
+<script src="qrcode.js"></script>
+<script src="app.js"></script>
+<script>
+(function () {
+  'use strict';
+  var $ = function (id) { return document.getElementById(id); };
+  var A = window.QRArt;
+
+  /* ---------- 状态 ---------- */
+  var mode = 'link';
+  var style = 'fluid';
+  var palette = null;          // null = 跟随名字
+  var imgPayload = null;       // 图片内嵌模式的完整二维码文本
+  var imgThumbUrl = null;
+  var regenTimer = null;
+
+  var VIEWER_BASE = location.origin + location.pathname;
+
+  /* ---------- 预设色板 ---------- */
+  var PRESETS = [
+    ['#6a5cff', '#a85cff'], ['#ff416c', '#ff4b2b'], ['#2193b0', '#6dd5ed'],
+    ['#134e5e', '#71b280'], ['#f7971e', '#ffd200'], ['#4568dc', '#b06ab3'],
+    ['#e65c00', '#f9d423'], ['#0f2027', '#2c5364'], ['#f857a6', '#ff5858'],
+    ['#11998e', '#38ef7d'], ['#42275a', '#734b6d'], ['#232526', '#525659']
+  ];
+  var swWrap = $('swatches');
+  PRESETS.forEach(function (p, i) {
+    var d = document.createElement('div');
+    d.className = 'sw';
+    d.style.background = 'linear-gradient(135deg,' + p[0] + ',' + p[1] + ')';
+    d.title = '配色 ' + (i + 1);
+    d.onclick = function () { palette = p; markSwatch(d); $('ccHint').textContent = ''; regen(); };
+    swWrap.appendChild(d);
+  });
+  $('swAuto').onclick = function () { palette = null; markSwatch($('swAuto')); regen(); };
+  function markSwatch(el) {
+    var list = swWrap.querySelectorAll('.sw, .auto-sw');
+    for (var i = 0; i < list.length; i++) list[i].classList.remove('on');
+    el.classList.add('on');
+  }
+  $('cc1').oninput = function () { palette = [$('cc1').value, $('cc2').value]; markSwatch($('cc1')); $('ccHint').textContent = '已用自定义色'; regen(); };
+  $('cc2').oninput = function () { palette = [$('cc1').value, $('cc2').value]; markSwatch($('cc1')); $('ccHint').textContent = '已用自定义色'; regen(); };
+
+  /* ---------- 风格段选 ---------- */
+  var segStyle = $('segStyle');
+  A.STYLES.forEach(function (s) {
+    var id = 'st_' + s;
+    var radio = document.createElement('input');
+    radio.type = 'radio'; radio.name = 'sty'; radio.id = id; radio.checked = s === 'fluid';
+    var label = document.createElement('label');
+    label.htmlFor = id; label.textContent = A.STYLE_NAMES[s];
+    radio.onchange = function () { if (radio.checked) { style = s; regen(); } };
+    segStyle.appendChild(radio); segStyle.appendChild(label);
+  });
+
+  /* ---------- 类型切换 ---------- */
+  $('tLink').onchange = function () { if (this.checked) { mode = 'link'; switchPane(); } };
+  $('tImg').onchange = function () { if (this.checked) { mode = 'image'; switchPane(); } };
+  function switchPane() {
+    $('linkPane').style.display = mode === 'link' ? '' : 'none';
+    $('imgPane').style.display = mode === 'image' ? '' : 'none';
+    regen();
+  }
+
+  /* ---------- 图片上传 ---------- */
+  $('drop').onclick = function () { $('inpFile').click(); };
+  $('inpFile').onchange = function () {
+    var f = this.files && this.files[0];
+    if (f) handleFile(f);
+    this.value = '';
+  };
+  $('imgClear').onclick = function () {
+    imgPayload = null;
+    if (imgThumbUrl) { URL.revokeObjectURL(imgThumbUrl); imgThumbUrl = null; }
+    $('imgPreviewWrap').style.display = 'none';
+    regen();
+  };
+  function handleFile(f) {
+    toast('正在压缩图片…');
+    A.compressToFit(f, 2100).then(function (blob) {
+      if (!blob) { toast('这张图太复杂压不进去，换一张试试，或改用图片直链'); return; }
+      var bytes = new Uint8Array(); // placeholder
+      blob.arrayBuffer().then(function (buf) {
+        var u8 = new Uint8Array(buf);
+        var payload = VIEWER_BASE + '#v=' + A.bytesToB64url(u8);
+        if (payload.length > 2940) { toast('压缩后仍超限，请换一张更简单的图'); return; }
+        imgPayload = payload;
+        if (imgThumbUrl) URL.revokeObjectURL(imgThumbUrl);
+        imgThumbUrl = URL.createObjectURL(blob);
+        $('imgThumb').src = imgThumbUrl;
+        $('imgMeta').innerHTML = '已内嵌缩略图 <b>' + (blob.size / 1024).toFixed(1) + 'KB</b><br>扫码打开本页即可查看大图';
+        $('imgPreviewWrap').style.display = 'flex';
+        toast('图片已内嵌 ✓');
+        regen();
+      });
+    });
+  }
+
+  /* ---------- 生成 ---------- */
+  function currentText() {
+    if (mode === 'link') return $('inpLink').value.trim();
+    var direct = $('inpImgUrl').value.trim();
+    if (direct) return direct;
+    return imgPayload;
+  }
+  function isEmbedded() {
+    return mode === 'image' && !$('inpImgUrl').value.trim() && !!imgPayload;
+  }
+  function regen() {
+    clearTimeout(regenTimer);
+    regenTimer = setTimeout(doRegen, 200);
+  }
+  function doRegen() {
+    var name = $('inpName').value.trim() || '我的二维码';
+    var theme = A.themeFor(name);
+    var c1 = palette ? palette[0] : theme.c1;
+    var c2 = palette ? palette[1] : theme.c2;
+    if (palette === null) { $('cc1').value = c1; $('cc2').value = c2; }
+
+    var logoMode = $('lgAuto').checked ? 'auto' : ($('lgChar').checked ? 'char' : 'none');
+    var logo = { type: 'none', value: '' };
+    if (logoMode === 'char') { logo = { type: 'char', value: name.charAt(0) }; }
+    else if (logoMode === 'auto') {
+      var e = A.emojiFor(name);
+      if (e) logo = { type: 'emoji', value: e };
+      else logo = { type: 'char', value: name.charAt(0) };
+    }
+
+    var text = currentText();
+    var embedded = isEmbedded();
+    $('qrMsg').textContent = '';
+    if (!text) {
+      $('caption').innerHTML = '先在上方填入<b>名字</b>和' + (mode === 'link' ? '<b>链接</b>' : '<b>图片</b>') + '，这里会实时变出二维码 ✨';
+      return;
+    }
+    try {
+      A.drawQR($('qr'), text, {
+        style: style, c1: c1, c2: c2, logo: logo,
+        ec: embedded ? 'L' : undefined
+      });
+      $('caption').innerHTML = '「<b>' + esc(name) + '</b>」· ' + theme.tag + ' · ' + A.STYLE_NAMES[style] + (embedded ? ' · 图片内嵌' : '');
+    } catch (err) {
+      $('qrMsg').textContent = embedded ? '图片压缩后仍超出二维码容量，请换一张更简单的图片' : '内容太长啦，换短一点的试试';
+    }
+  }
+  function esc(s) { return s.replace(/&/g, '&amp;').replace(/</g, '&lt;'); }
+
+  /* ---------- 保存 / 复制 ---------- */
+  $('btnSave').onclick = function () {
+    var name = $('inpName').value.trim() || 'qrcode';
+    var text = currentText();
+    if (!text) { toast('先填写内容再保存哦'); return; }
+    var theme = A.themeFor(name);
+    var c1 = palette ? palette[0] : theme.c1;
+    var c2 = palette ? palette[1] : theme.c2;
+    var big = document.createElement('canvas');
+    big.width = big.height = 1280;
+    try {
+      A.drawQR(big, text, buildOpts(c1, c2, name));
+      big.toBlob(function (blob) {
+        var a = document.createElement('a');
+        a.href = URL.createObjectURL(blob);
+        a.download = name + '.png';
+        a.click();
+        setTimeout(function () { URL.revokeObjectURL(a.href); }, 4000);
+        saveHistory();
+        toast('已保存 ' + name + '.png');
+      }, 'image/png');
+    } catch (err) { toast('生成失败：' + err.message); }
+  };
+  $('btnCopy').onclick = function () {
+    var name = $('inpName').value.trim() || 'qrcode';
+    var theme = A.themeFor(name);
+    var c1 = palette ? palette[0] : theme.c1;
+    var c2 = palette ? palette[1] : theme.c2;
+    var big = document.createElement('canvas');
+    big.width = big.height = 1280;
+    try {
+      A.drawQR(big, text(), buildOpts(c1, c2, name));
+      big.toBlob(function (blob) {
+        if (navigator.clipboard && window.ClipboardItem) {
+          navigator.clipboard.write([new ClipboardItem({ 'image/png': blob })]).then(function () {
+            toast('已复制到剪贴板 ✓');
+            saveHistory();
+          }).catch(function () { toast('复制失败，请长按预览图或直接保存'); });
+        } else toast('此浏览器不支持复制图片，请长按预览图');
+      }, 'image/png');
+    } catch (err) { toast('生成失败：' + err.message); }
+  };
+  function buildOpts(c1, c2, name) {
+    var logoMode = $('lgAuto').checked ? 'auto' : ($('lgChar').checked ? 'char' : 'none');
+    var logo = { type: 'none', value: '' };
+    if (logoMode === 'char') logo = { type: 'char', value: name.charAt(0) };
+    else if (logoMode === 'auto') {
+      var e = A.emojiFor(name);
+      logo = e ? { type: 'emoji', value: e } : { type: 'char', value: name.charAt(0) };
+    }
+    return { style: style, c1: c1, c2: c2, logo: logo, ec: isEmbedded() ? 'L' : undefined };
+  }
+  function text() { return currentText(); }
+
+  /* ---------- 历史 ---------- */
+  function loadHist() {
+    try { return JSON.parse(localStorage.getItem('qr_hist') || '[]'); } catch (e) { return []; }
+  }
+  function saveHistory() {
+    var name = $('inpName').value.trim() || '我的二维码';
+    var textV = currentText();
+    if (!textV) return;
+    var theme = A.themeFor(name);
+    var list = loadHist().filter(function (h) { return h.p !== textV; });
+    list.unshift({
+      n: name, t: mode, p: textV, s: style,
+      c: palette || [theme.c1, theme.c2],
+      lg: $('lgAuto').checked ? 'auto' : ($('lgChar').checked ? 'char' : 'none'),
+      em: A.emojiFor(name),
+      ts: Date.now()
+    });
+    list = list.slice(0, 12);
+    localStorage.setItem('qr_hist', JSON.stringify(list));
+    renderHist();
+  }
+  function renderHist() {
+    var list = loadHist();
+    var wrap = $('hist');
+    wrap.innerHTML = '';
+    if (!list.length) { wrap.innerHTML = '<div class="empty">还没有记录，生成后会自动保存在本机</div>'; return; }
+    list.forEach(function (h) {
+      var item = document.createElement('div');
+      item.className = 'hitem';
+      var icon = h.t === 'image' ? '🖼️' : '🔗';
+      item.innerHTML = '<span>' + icon + '</span><span class="hn">' + esc(h.n) + '</span>' +
+        '<span class="hd">' + new Date(h.ts).toLocaleDateString() + '</span><span class="hx">✕</span>';
+      item.querySelector('.hx').onclick = function (ev) {
+        ev.stopPropagation();
+        localStorage.setItem('qr_hist', JSON.stringify(loadHist().filter(function (x) { return x.ts !== h.ts; })));
+        renderHist();
+      };
+      item.onclick = function () {
+        $('inpName').value = h.n;
+        style = h.s;
+        palette = h.c;
+        markSwatch(swWrap.querySelector('.sw:last-child') || $('swAuto'));
+        if (h.lg === 'char') $('lgChar').checked = true;
+        else if (h.lg === 'none') $('lgNone').checked = true;
+        else $('lgAuto').checked = true;
+        if (h.t === 'image' && h.p.indexOf('#v=') > 0) {
+          mode = 'image'; $('tImg').checked = true; switchPane();
+          imgPayload = h.p;
+          $('imgMeta').innerHTML = '已恢复内嵌图片记录';
+          $('imgPreviewWrap').style.display = 'flex';
+        } else if (h.t === 'image') {
+          mode = 'image'; $('tImg').checked = true; switchPane();
+          $('inpImgUrl').value = h.p;
+        } else {
+          mode = 'link'; $('tLink').checked = true; switchPane();
+          $('inpLink').value = h.p;
+        }
+        doRegen();
+      };
+      wrap.appendChild(item);
+    });
+  }
+
+  /* ---------- 扫码看图模式 ---------- */
+  function checkViewer() {
+    var h = location.hash || '';
+    if (h.indexOf('#v=') !== 0) return false;
+    try {
+      var bytes = A.b64urlToBytes(h.slice(3));
+      var blob = new Blob([bytes], { type: A.sniffMime(bytes) });
+      $('viewerImg').src = URL.createObjectURL(blob);
+      $('viewer').style.display = 'block';
+      document.title = '图片详情 · 花漾二维码';
+      return true;
+    } catch (e) { return false; }
+  }
+
+  /* ---------- 杂项 ---------- */
+  var toastTimer = null;
+  function toast(msg) {
+    var t = $('toast');
+    t.textContent = msg;
+    t.style.opacity = '1';
+    clearTimeout(toastTimer);
+    toastTimer = setTimeout(function () { t.style.opacity = '0'; }, 2200);
+  }
+  $('inpName').oninput = regen;
+  $('inpLink').oninput = regen;
+  $('inpImgUrl').oninput = regen;
+  Array.prototype.forEach.call(document.querySelectorAll('#segLogo input'), function (r) { r.onchange = regen; });
+  window.addEventListener('hashchange', checkViewer);
+
+  renderHist();
+  if (!checkViewer()) doRegen();
+})();
+</script>
+</body>
+</html>

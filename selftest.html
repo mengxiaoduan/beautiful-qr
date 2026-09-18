@@ -1,0 +1,92 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>解码自测报告 · 花漾二维码</title>
+<style>
+  body { font-family: -apple-system, "PingFang SC", "Microsoft YaHei", sans-serif; background: #f5f4ff; margin: 0; padding: 24px 14px; }
+  h1 { font-size: 20px; text-align: center; color: #23263b; }
+  p.sub { text-align: center; color: #7a7e99; font-size: 13px; margin-bottom: 20px; }
+  .wrap { max-width: 560px; margin: 0 auto; }
+  table { width: 100%; border-collapse: collapse; background: #fff; border-radius: 14px; overflow: hidden; box-shadow: 0 6px 24px rgba(90,80,200,.1); }
+  th, td { padding: 10px 12px; font-size: 13px; text-align: left; border-bottom: 1px solid #f0effa; }
+  th { background: #f0eefe; color: #5551a8; }
+  td canvas { width: 84px; height: 84px; border-radius: 8px; }
+  .ok { color: #0a9c66; font-weight: 700; }
+  .fail { color: #e23a5f; font-weight: 700; }
+  #summary { margin-top: 18px; text-align: center; font-size: 17px; font-weight: 800; }
+  .payload { color: #7a7e99; font-size: 11px; word-break: break-all; }
+</style>
+</head>
+<body>
+  <h1>二维码解码自测</h1>
+  <p class="sub">用 jsQR 对每种风格 × 每种内容生成的二维码画面做真实扫码解码，逐项回验</p>
+  <div class="wrap">
+    <table>
+      <thead><tr><th>预览</th><th>风格 / 内容</th><th>解码结果</th></tr></thead>
+      <tbody id="rows"></tbody>
+    </table>
+    <div id="summary">测试中…</div>
+  </div>
+<script src="qrcode.js"></script>
+<script src="jsQR.js"></script>
+<script src="app.js"></script>
+<script>
+(function () {
+  'use strict';
+  var payloads = [
+    'https://mengxiaoduan.github.io/beautiful-qr/',
+    'https://example.com/hello-world?from=selftest',
+    'https://mengxiaoduan.github.io/beautiful-qr/#v=UklGRhoAAABXRUJQVlA4TA0AAAAvAAAAEAcQERGIiP4HAA=='
+  ];
+  var styles = ['dot', 'rounded', 'fluid', 'square'];
+  var rows = document.getElementById('rows');
+  var pass = 0, fail = 0, pending = 0;
+
+  function addRow(canvas, label, payload, ok) {
+    var tr = document.createElement('tr');
+    var td1 = document.createElement('td'); td1.appendChild(canvas);
+    var td2 = document.createElement('td');
+    td2.innerHTML = '<b>' + label + '</b><br><span class="payload">' + payload.slice(0, 60) + (payload.length > 60 ? '…' : '') + '</span>';
+    var td3 = document.createElement('td');
+    td3.innerHTML = ok ? '<span class="ok">✓ 解码一致</span>' : '<span class="fail">✗ 失败</span>';
+    tr.appendChild(td1); tr.appendChild(td2); tr.appendChild(td3);
+    rows.appendChild(tr);
+  }
+
+  var tasks = [];
+  styles.forEach(function (s) {
+    payloads.forEach(function (p, pi) {
+      tasks.push({ style: s, payload: p, pi: pi });
+    });
+  });
+
+  tasks.forEach(function (task) {
+    var canvas = document.createElement('canvas');
+    canvas.width = canvas.height = 420;
+    var ok = false;
+    try {
+      window.QRArt.drawQR(canvas, task.payload, {
+        style: task.style,
+        c1: '#6a5cff', c2: '#a85cff',
+        logo: task.pi === 1 ? { type: 'char', value: '旅' } : { type: 'none', value: '' }
+      });
+      var ctx = canvas.getContext('2d');
+      var imgData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+      var code = window.jsQR(imgData.data, canvas.width, canvas.height);
+      ok = !!(code && code.data === task.payload);
+    } catch (e) { ok = false; }
+    var label = '圆点/圆润/液态/方块'.split('/')[['dot', 'rounded', 'fluid', 'square'].indexOf(task.style)] + (task.pi === 1 ? ' +首字Logo' : '');
+    addRow(canvas, label, task.payload, ok);
+    if (ok) pass++; else fail++;
+  });
+
+  var sum = document.getElementById('summary');
+  sum.innerHTML = fail === 0
+    ? '<span class="ok">🎉 全部通过：' + pass + '/' + (pass + fail) + ' 项扫码解码一致</span>'
+    : '<span class="fail">⚠ ' + fail + ' 项失败</span>';
+})();
+</script>
+</body>
+</html>
