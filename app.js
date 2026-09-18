@@ -286,8 +286,8 @@
       var img = new Image();
       var url = URL.createObjectURL(blob);
       img.onload = function () {
-        var side = Math.min(260, img.width);
-        var q = 0.5;
+        var side = Math.min(240, img.width);
+        var q = 0.45;
         function attempt() {
           var c = document.createElement('canvas');
           c.width = Math.max(24, Math.round(side));
@@ -309,7 +309,8 @@
             return;
           }
           side = Math.round(side * 0.85);
-          if (side < 72) { URL.revokeObjectURL(url); resolve(null); return; }
+          q = q * 0.88;
+          if (side < 60) { URL.revokeObjectURL(url); resolve(null); return; }
           attempt();
         }
         attempt();
